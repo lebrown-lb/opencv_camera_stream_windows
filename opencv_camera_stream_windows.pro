@@ -25,6 +25,7 @@ FORMS += \
 INCLUDEPATH += C:\opencv\build\include
 
 LIBS += -lWs2_32 \
+        -lIphlpapi \
         C:\opencv\Release\bin\libopencv_core4120.dll \
         C:\opencv\Release\bin\libopencv_imgproc4120.dll \
         C:\opencv\Release\bin\libopencv_videoio4120.dll

@@ -7,6 +7,10 @@
 #include <QPixmap>
 #include <QMutex>
 #include <QComboBox>
+#include <winsock2.h>
+#include <iphlpapi.h>
+#include <ws2tcpip.h>
+#include <stdlib.h>
 
 
 QMutex  frame_mutex;
@@ -319,7 +323,79 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 std::string MainWindow::getNetworkAddress()
 {
-    return std::string("10.0.0.116");
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
+        std::cout << "Get Network Address WSAStartup failed." << std::endl;
+        return std::string("IP NOT AVAILABLE");
+    }
+
+    ULONG bufferSize = 0;
+    GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &bufferSize);
+
+    PIP_ADAPTER_ADDRESSES pAdapterAddresses = (IP_ADAPTER_ADDRESSES*)HeapAlloc(GetProcessHeap(), 0, bufferSize);
+    if (pAdapterAddresses == NULL)
+    {
+        // Handle allocation error
+        std::cout << "Get Network Address Allocation failed." << std::endl;
+        WSACleanup();
+        return std::string("IP NOT AVAILABLE");
+    }
+
+    DWORD dwRetVal = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, pAdapterAddresses, &bufferSize);
+    if (dwRetVal != NO_ERROR)
+    {
+        std::cout << "Get Network Address  failed." << std::endl;
+        WSACleanup();
+        return std::string("IP NOT AVAILABLE");
+    }
+
+    std::ostringstream ss;
+    PIP_ADAPTER_ADDRESSES pCurrentAdapter = pAdapterAddresses;
+    while (pCurrentAdapter) {
+        char name[100];
+
+        wcstombs(name,pCurrentAdapter->FriendlyName,100);
+        ss << name << ": ";
+
+        PIP_ADAPTER_UNICAST_ADDRESS_LH unicastAddressPtr = pCurrentAdapter->FirstUnicastAddress;
+
+        while(unicastAddressPtr)
+        {
+            if(unicastAddressPtr->Address.lpSockaddr->sa_family == AF_INET)
+            {
+                LPSOCKADDR ipAddress = (LPSOCKADDR)unicastAddressPtr->Address.lpSockaddr;
+
+                char szAddress[INET_ADDRSTRLEN]; // Buffer for the string
+                DWORD dwAddressLength = sizeof(szAddress);
+
+                // Cast sockaddr_in to sockaddr*
+                if (WSAAddressToStringA(ipAddress, sizeof(*ipAddress), NULL, szAddress,&dwAddressLength) == 0)
+                {
+                    ss << szAddress; // Use wcout for TCHAR
+                } else {
+                    std::cerr << "WSAAddressToString failed with error: " << WSAGetLastError() << std::endl;
+                }
+
+            }
+            unicastAddressPtr = unicastAddressPtr->Next;
+        }
+
+        ss << std::endl;
+
+        // Process other information like IP addresses, MAC address, etc.
+
+        pCurrentAdapter = pCurrentAdapter->Next;
+    }
+
+    if (pAdapterAddresses) {
+        HeapFree(GetProcessHeap(), 0, pAdapterAddresses);
+        pAdapterAddresses = NULL;
+    }
+    WSACleanup();
+
+    return ss.str();
+
 
 }
 
