@@ -30,6 +30,8 @@ bool clientCtrlFlag = false;
 
 #define FORMAT_BGR  0xFF
 #define FORMAT_RGB  0x11
+#define STREAM_WIDTH 1280
+#define STREAM_HEIGHT 720
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -49,14 +51,14 @@ MainWindow::MainWindow(QWidget *parent)
     {
         std::cout << "OPENED CAMERA" << std::endl;
 
-        m_cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280); // Set width to 1280 pixels
-        m_cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720); // Set height to 720 pixels
+        m_cap.set(cv::CAP_PROP_FRAME_WIDTH, STREAM_WIDTH); // Set width to 1280 pixels
+        m_cap.set(cv::CAP_PROP_FRAME_HEIGHT, STREAM_HEIGHT); // Set height to 720 pixels
 
         m_timer = new QTimer(this);
         connect(m_timer, SIGNAL(timeout()), this, SLOT(updateStream()));
 
         m_serverThread = new QThread(this);
-        m_server = new TcpServer();
+        m_server = new UdpServer(nullptr,STREAM_WIDTH,STREAM_HEIGHT);
         m_server->moveToThread(m_serverThread);
 
         connect(this,SIGNAL(startServer()),m_server,SLOT(runServer()));
@@ -65,10 +67,11 @@ MainWindow::MainWindow(QWidget *parent)
     else
         std::cout << "ERROR OPENING CAMERA!" << std::endl;
 
-    ui->address_lbl->setText(QString::fromStdString(getNetworkAddress()));
+    std::string tmp = getNetworkAddress();
+    ui->address_lbl->setText(QString::fromStdString(tmp));
 
     m_clientThread = new QThread(this);
-    m_client = new TcpClient();
+    m_client = new UdpClient();
     m_client->moveToThread(m_clientThread);
 
     connect(this,SIGNAL(startClient()),m_client,SLOT(runClient()));
@@ -197,7 +200,7 @@ void MainWindow::targetPortChange()
     {
         //turn text green
         ui->target_port_le->setStyleSheet("QLineEdit { color: green; }");
-        m_client->setPort(tmp);
+        m_client->setPort(std::stoi(tmp));
     }
     else
     {
