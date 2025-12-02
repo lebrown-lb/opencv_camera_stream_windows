@@ -27,9 +27,9 @@ FORMS += \
     mainwindow.ui
 
 INCLUDEPATH += C:\opencv\build\include \
-                C:\ffmpeg\install\include
+                C:\ffmpeg\include
 
-LIBS += -LC:\ffmpeg\install\lib
+LIBS += -LC:\ffmpeg\lib
 
 LIBS += -lWs2_32 \
         -lIphlpapi \

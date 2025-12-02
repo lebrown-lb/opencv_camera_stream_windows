@@ -34,7 +34,7 @@ void UdpClient::runClient()
     std::cout << "PORT: " << m_port << std::endl;
 
     WSADATA wsaData;
-    char buffer[MAXTXLEN];
+    unsigned char buffer[MAXTXLEN];
     sockaddr_in serv_addr;
     sockaddr_in local;
     int iResult;
@@ -60,6 +60,16 @@ void UdpClient::runClient()
     if(sock == INVALID_SOCKET)
     {
         std::cout << "socket failed with error: " << WSAGetLastError() << std::endl;
+        WSACleanup();
+        emit clientClosed();
+        return;
+    }
+
+    // Assuming 'sock' is your UDP socket handle
+    unsigned long mode = 1; // 1 for non-blocking, 0 for blocking
+    if (ioctlsocket(sock, FIONBIO, &mode) != 0)
+    {
+        std::cout << "ioctlsocket failed with error: " << WSAGetLastError() << std::endl;
         WSACleanup();
         emit clientClosed();
         return;
