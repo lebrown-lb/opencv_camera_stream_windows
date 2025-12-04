@@ -45,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->target_address_le, &QLineEdit::textChanged, this, &MainWindow::targetAddressChange);
     connect(ui->target_port_le, &QLineEdit::textChanged, this, &MainWindow::targetPortChange);
     connect(ui->mode_cb, SIGNAL(currentIndexChanged(int)), this, SLOT(modeChangeHandler(int)));
-    m_cap.open(0);
+    m_cap.open(1);
 
     if(m_cap.isOpened())
     {

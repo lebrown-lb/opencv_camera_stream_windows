@@ -39,14 +39,24 @@ void UdpServer::runServer()
 
 
     s_address.sin_family = AF_INET;
-    s_address.sin_addr.s_addr = INADDR_ANY;
-    s_address.sin_port = m_port; // choose any
+    s_address.sin_addr.s_addr = inet_addr("10.0.0.4");
+    s_address.sin_port = htons(m_port); // choose any
 
 
     SOCKET server_fd = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
     if(server_fd == INVALID_SOCKET)
     {
         std::cout << "socket failed with error: " << WSAGetLastError() << std::endl;
+        WSACleanup();
+        emit serverClosed();
+        return;
+    }
+
+    // Assuming 'sock' is your UDP socket handle
+    unsigned long mode = 1; // 1 for non-blocking, 0 for blocking
+    if (ioctlsocket(server_fd, FIONBIO, &mode) != 0)
+    {
+        std::cout << "ioctlsocket failed with error: " << WSAGetLastError() << std::endl;
         WSACleanup();
         emit serverClosed();
         return;
